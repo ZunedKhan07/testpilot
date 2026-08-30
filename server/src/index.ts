@@ -17,9 +17,11 @@ app.use(express.json());
 
 const port = process.env.PORT || 5000;
 
-import projectRoutes from "./routes/projectRoutes.js";
+import projectRoutes from "./routes/project.routes.js";
+import aiRoutes from "./routes/ai.routes.js";
 
 app.use("/api/project", projectRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.listen(port, () => {
     console.log(`\n ✅ Server running on http://localhost:${port}`);  
