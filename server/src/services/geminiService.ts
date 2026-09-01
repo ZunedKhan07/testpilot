@@ -1,8 +1,18 @@
 import { GoogleGenAI } from "@google/genai";
 
-interface AIAnalysisResult {
+export interface IssueItem {
+  priority: "HIGH" | "MEDIUM" | "LOW"; // 🔴 HIGH = Important | 🟡 MEDIUM = Recommended | ⚪ LOW = Optional
+  category: "BUG" | "SECURITY" | "PERFORMANCE" | "CODE_STYLE";
+  title: string;
+  description: string;
+  file?: string;
+  recommendation: string;
+}
+
+export interface AIAnalysisResult {
   summary: string;
   architectureNotes: string[];
+  issues: IssueItem[];
   suggestedPlaywrightTests: {
     fileName: string;
     code: string;
@@ -14,19 +24,23 @@ export const generateRepoAnalysisAndTests = async (
   repoName: string,
   contextText: string
 ): Promise<AIAnalysisResult> => {
-  // Initialize Gemini SDK with User's own API Key
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
-You are an expert QA Automation Engineer & Software Architect.
-Analyze the following source code context for repository "${repoName}".
+You are an expert QA Automation Engineer, Security Auditor & Software Architect.
+Analyze the source code context for repository "${repoName}".
 
 Provide a structured JSON output with the following exact keys:
 1. "summary": A brief 2-3 sentence overview of what this application does.
 2. "architectureNotes": An array of key observations (design patterns, structure, endpoints).
-3. "suggestedPlaywrightTests": An array of objects, each containing:
-   - "fileName": Appropriate filename for Playwright test (e.g., "auth.spec.ts").
-   - "code": Clean, executable Playwright TypeScript code based on the routes/logic found.
+3. "issues": An array of identified potential bugs, security vulnerabilities, or performance bottlenecks. Each object must have:
+   - "priority": Exact string "HIGH", "MEDIUM", or "LOW". ("HIGH" = 🔴 Important/Critical bug, "MEDIUM" = 🟡 Recommended/Performance, "LOW" = ⚪ Optional/Code Style)
+   - "category": Exact string "BUG", "SECURITY", "PERFORMANCE", or "CODE_STYLE".
+   - "title": Short title of the issue.
+   - "description": Clear explanation of why this is a problem.
+   - "file": File path where the issue was detected (if applicable).
+   - "recommendation": Concrete fix or improvement advice.
+4. "suggestedPlaywrightTests": An array of objects containing "fileName" and "code" (executable Playwright TypeScript code).
 
 Return ONLY valid JSON without markdown wrapping or extra text.
 
