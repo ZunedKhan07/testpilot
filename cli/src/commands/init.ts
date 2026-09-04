@@ -24,7 +24,7 @@ export const handleInit = async () => {
           message: "Enter TestPilot Backend Server URL:",
           placeholder: "http://localhost:5000",
           initialValue: "http://localhost:5000",
-          validate(value) {
+          validate(value: string) {
             if (!value.startsWith("http://") && !value.startsWith("https://")) {
               return "URL must start with http:// or https://";
             }
