@@ -1,0 +1,29 @@
+{
+  "name": "testpilot",
+  "version": "1.0.0",
+  "description": "TestPilot CLI - AI Driven QA Automation & Auto-Fixing Engine",
+  "type": "module",
+  "main": "dist/bin/index.js",
+  "bin": {
+    "testpilot": "./dist/bin/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/bin/index.ts --format esm --clean",
+    "dev": "tsx src/bin/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@clack/prompts": "^1.7.0",
+    "commander": "^15.0.0",
+    "dotenv": "^17.4.2",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}
