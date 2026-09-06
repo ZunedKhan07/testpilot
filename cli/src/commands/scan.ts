@@ -1,3 +1,4 @@
+import "dotenv/config";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { loadConfig } from "../utils/config.js";
@@ -6,9 +7,10 @@ import {
   findAssociatedTestFile,
   runPlaywrightTest,
 } from "../utils/playwright.js";
+import { requestAIFix, applyFixToFile } from "../utils/ai.js";
 
 export const handleScan = async () => {
-  p.intro(pc.bgMagenta(pc.black(" TestPilot Change Detector ")));
+  p.intro(pc.bgMagenta(pc.black(" TestPilot QA Automation Engine ")));
 
   const config = loadConfig();
   if (!config) {
@@ -44,7 +46,6 @@ export const handleScan = async () => {
     for (const file of changedFiles) {
       p.log.info(` • ${pc.cyan(file.filePath)} [${pc.dim(file.status.toUpperCase())}]`);
 
-      // Check if Playwright test file exists for this changed file
       const testFile = findAssociatedTestFile(file.filePath);
 
       if (testFile) {
@@ -57,8 +58,50 @@ export const handleScan = async () => {
           testSpinner.stop(pc.green(`✔ Test passed for ${file.filePath}`));
         } else {
           testSpinner.stop(pc.red(`✖ Test failed for ${file.filePath}`));
-          p.log.error(pc.bold("Captured Failure Log (Ready for AI Auto-Fix):"));
-          p.log.message(pc.dim(result.errorLog?.slice(0, 300) + "..."));
+
+          p.log.error(pc.bold("Captured Failure Log:"));
+          p.log.message(pc.dim(result.errorLog?.slice(0, 200) + "..."));
+
+          // Trigger AI QA Agent
+          const aiSpinner = p.spinner();
+          aiSpinner.start("🤖 AI QA Agent analyzing failure trace & code...");
+
+          const aiFix = await requestAIFix(
+            config.serverUrl,
+            config.geminiApiKey || "",
+            file.filePath,
+            file.content || "",
+            result.errorLog || ""
+          );
+
+          aiSpinner.stop(pc.cyan("🤖 AI QA Agent Analysis Complete!"));
+
+          if (aiFix) {
+            p.note(
+              `${pc.bold("Diagnosis:")} ${aiFix.explanation}\n${pc.bold(
+                "Fix Type:"
+              )} ${aiFix.type.toUpperCase()}`,
+              "AI QA Recommendation"
+            );
+
+            const shouldFix = await p.confirm({
+              message: `Apply AI Auto-Fix directly to ${pc.cyan(file.filePath)}?`,
+              initialValue: true,
+            });
+
+            if (p.isCancel(shouldFix) || !shouldFix) {
+              p.log.warn("Auto-fix skipped by user.");
+            } else {
+              const success = applyFixToFile(file.absolutePath, aiFix.fixedCode);
+              if (success) {
+                p.log.success(
+                  pc.green(`✔ File ${file.filePath} updated successfully!`)
+                );
+              } else {
+                p.log.error(`Failed to write fix to ${file.filePath}`);
+              }
+            }
+          }
         }
       } else {
         p.log.warn(
@@ -67,12 +110,7 @@ export const handleScan = async () => {
       }
     }
 
-    p.note(
-      `Focused scan active: Only these ${changedFiles.length} file(s) and test traces will be processed.`,
-      "Targeted Analysis"
-    );
-
-    p.outro(pc.green("Git Change Detection & Test Run Completed! ⚡"));
+    p.outro(pc.green("TestPilot QA Engine Run Completed! ⚡"));
   } catch (error: any) {
     spinner.stop("Failed to scan Git repository or run tests.");
     p.log.error(error.message || "Unknown error occurred.");
