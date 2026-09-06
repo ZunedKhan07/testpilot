@@ -22,6 +22,7 @@
     "simple-git": "^3.36.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.4.1",
     "tsup": "^8.5.1",
     "tsx": "^4.23.13",
