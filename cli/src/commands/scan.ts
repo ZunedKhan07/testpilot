@@ -17,6 +17,7 @@ import {
   applySafeFix,
   rollbackFix,
 } from "../utils/ai.js";
+import { saveScanLog } from "../utils/logger.js"; // Logger Import
 
 export const handleScan = async () => {
   p.intro(pc.bgMagenta(pc.black(" TestPilot QA Automation Engine ")));
@@ -63,6 +64,15 @@ export const handleScan = async () => {
 
         if (result.passed) {
           testSpinner.stop(pc.green(`✔ Test passed for ${file.filePath}`));
+          
+          // Log Passed Status
+          saveScanLog({
+            id: `scan-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            filePath: file.filePath,
+            status: "PASSED",
+          });
+
         } else {
           testSpinner.stop(pc.red(`✖ Test failed for ${file.filePath}`));
 
@@ -94,6 +104,15 @@ export const handleScan = async () => {
 
             if (p.isCancel(shouldFix) || !shouldFix) {
               p.log.warn("Auto-fix skipped by user.");
+              
+              saveScanLog({
+                id: `scan-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                filePath: file.filePath,
+                status: "FAILED",
+                explanation: aiFix.explanation,
+              });
+
             } else {
               const { backupCode, success } = applySafeFix(file.absolutePath, aiFix.fixedCode);
 
@@ -107,7 +126,16 @@ export const handleScan = async () => {
                 if (verifyResult.passed) {
                   verifySpinner.stop(pc.green(`🎉 Auto-Fix Verified & Passed!`));
 
-                  // Day 10 Feature: Branch Creation Prompt
+                  // Log Fixed Status
+                  saveScanLog({
+                    id: `scan-${Date.now()}`,
+                    timestamp: new Date().toISOString(),
+                    filePath: file.filePath,
+                    status: "FIXED",
+                    explanation: aiFix.explanation,
+                    diff: aiFix.fixedCode,
+                  });
+
                   const createPR = await p.confirm({
                     message: `Create a Git fix-branch for ${pc.cyan(file.filePath)}?`,
                     initialValue: true,
@@ -120,7 +148,6 @@ export const handleScan = async () => {
                     
                     if (gitSuccess) {
                       gitSpinner.stop(pc.green(`✔ Fix committed on branch: ${pc.cyan(branchName)}`));
-                      p.log.info(`💡 Push branch to GitHub: ${pc.dim(`git push origin ${branchName}`)}`);
                     } else {
                       gitSpinner.stop(pc.red("Failed to create Git branch."));
                     }
@@ -129,6 +156,15 @@ export const handleScan = async () => {
                   verifySpinner.stop(pc.red(`⚠️ Re-test failed after applying fix. Rolling back changes...`));
                   rollbackFix(file.absolutePath, backupCode);
                   p.log.error(pc.yellow(`🔄 Rollback completed! Restored ${file.filePath}.`));
+
+                  // Log Rolled back Status
+                  saveScanLog({
+                    id: `scan-${Date.now()}`,
+                    timestamp: new Date().toISOString(),
+                    filePath: file.filePath,
+                    status: "ROLLED_BACK",
+                    explanation: "Verification failed post-fix. Auto-rollback triggered.",
+                  });
                 }
               }
             }

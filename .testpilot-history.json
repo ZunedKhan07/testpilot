@@ -1,0 +1,9 @@
+[
+  {
+    "id": "scan-1789030679022",
+    "timestamp": "2026-09-10T08:57:59.022Z",
+    "filePath": "src/cart.ts",
+    "status": "ROLLED_BACK",
+    "explanation": "Verification failed post-fix. Auto-rollback triggered."
+  }
+]
