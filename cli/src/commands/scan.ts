@@ -7,7 +7,12 @@ import {
   findAssociatedTestFile,
   runPlaywrightTest,
 } from "../utils/playwright.js";
-import { requestAIFix, applyFixToFile } from "../utils/ai.js";
+import {
+  requestAIFix,
+  showDiffPreview,
+  applySafeFix,
+  rollbackFix,
+} from "../utils/ai.js";
 
 export const handleScan = async () => {
   p.intro(pc.bgMagenta(pc.black(" TestPilot QA Automation Engine ")));
@@ -32,15 +37,13 @@ export const handleScan = async () => {
     const changedFiles = await getChangedFiles();
 
     if (changedFiles.length === 0) {
-      spinner.stop(pc.green("No changed files detected. Codebase is clean!"));
+      spinner.stop(pc.green("No changed files detected. Workspace is clean!"));
       p.outro(pc.gray("Server starting normally... 🚀"));
       process.exit(0);
     }
 
     spinner.stop(
-      pc.yellow(
-        `Detected ${changedFiles.length} modified file(s). Checking for associated tests...`
-      )
+      pc.yellow(`Detected ${changedFiles.length} modified file(s). Running QA Verification...`)
     );
 
     for (const file of changedFiles) {
@@ -50,19 +53,16 @@ export const handleScan = async () => {
 
       if (testFile) {
         const testSpinner = p.spinner();
-        testSpinner.start(`Executing Playwright E2E test for ${file.filePath}...`);
+        testSpinner.start(`Executing Playwright test for ${file.filePath}...`);
 
-        const result = await runPlaywrightTest(testFile);
+        let result = await runPlaywrightTest(testFile);
 
         if (result.passed) {
           testSpinner.stop(pc.green(`✔ Test passed for ${file.filePath}`));
         } else {
           testSpinner.stop(pc.red(`✖ Test failed for ${file.filePath}`));
 
-          p.log.error(pc.bold("Captured Failure Log:"));
-          p.log.message(pc.dim(result.errorLog?.slice(0, 200) + "..."));
-
-          // Trigger AI QA Agent
+          // AI Fix Request
           const aiSpinner = p.spinner();
           aiSpinner.start("🤖 AI QA Agent analyzing failure trace & code...");
 
@@ -78,41 +78,51 @@ export const handleScan = async () => {
 
           if (aiFix) {
             p.note(
-              `${pc.bold("Diagnosis:")} ${aiFix.explanation}\n${pc.bold(
-                "Fix Type:"
-              )} ${aiFix.type.toUpperCase()}`,
-              "AI QA Recommendation"
+              `${pc.bold("Diagnosis:")} ${aiFix.explanation}\n${pc.bold("Fix Type:")} ${aiFix.type.toUpperCase()}`,
+              "AI Proposed Solution"
             );
 
+            // Show Line-by-Line Code Diff
+            showDiffPreview(file.filePath, file.content || "", aiFix.fixedCode);
+
             const shouldFix = await p.confirm({
-              message: `Apply AI Auto-Fix directly to ${pc.cyan(file.filePath)}?`,
+              message: `Apply proposed AI Auto-Fix to ${pc.cyan(file.filePath)}?`,
               initialValue: true,
             });
 
             if (p.isCancel(shouldFix) || !shouldFix) {
               p.log.warn("Auto-fix skipped by user.");
             } else {
-              const success = applyFixToFile(file.absolutePath, aiFix.fixedCode);
+              // Apply Fix with Backup
+              const { backupCode, success } = applySafeFix(file.absolutePath, aiFix.fixedCode);
+
               if (success) {
-                p.log.success(
-                  pc.green(`✔ File ${file.filePath} updated successfully!`)
-                );
-              } else {
-                p.log.error(`Failed to write fix to ${file.filePath}`);
+                p.log.success(pc.green(`✔ Fix applied. Re-running Playwright verification test...`));
+
+                // Verification Step
+                const verifySpinner = p.spinner();
+                verifySpinner.start("Verifying fix stability...");
+                const verifyResult = await runPlaywrightTest(testFile);
+
+                if (verifyResult.passed) {
+                  verifySpinner.stop(pc.green(`🎉 Auto-Fix Verified & Passed!`));
+                } else {
+                  verifySpinner.stop(pc.red(`⚠️ Re-test failed after applying fix. Rolling back changes...`));
+                  rollbackFix(file.absolutePath, backupCode);
+                  p.log.error(pc.yellow(`🔄 Rollback completed! Restored ${file.filePath} to initial state.`));
+                }
               }
             }
           }
         }
       } else {
-        p.log.warn(
-          `No matching Playwright test found for ${pc.gray(file.filePath)}. Skipping test run.`
-        );
+        p.log.warn(`No Playwright test found for ${pc.gray(file.filePath)}.`);
       }
     }
 
-    p.outro(pc.green("TestPilot QA Engine Run Completed! ⚡"));
+    p.outro(pc.green("TestPilot Execution Completed! ⚡"));
   } catch (error: any) {
-    spinner.stop("Failed to scan Git repository or run tests.");
+    spinner.stop("Failed execution scan.");
     p.log.error(error.message || "Unknown error occurred.");
     process.exit(1);
   }
