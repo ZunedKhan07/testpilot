@@ -2,7 +2,11 @@ import "dotenv/config";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { loadConfig } from "../utils/config.js";
-import { getChangedFiles, isGitRepo } from "../utils/git.js";
+import {
+  getChangedFiles,
+  isGitRepo,
+  createFixBranchAndCommit,
+} from "../utils/git.js";
 import {
   findAssociatedTestFile,
   runPlaywrightTest,
@@ -37,7 +41,7 @@ export const handleScan = async () => {
     const changedFiles = await getChangedFiles();
 
     if (changedFiles.length === 0) {
-      spinner.stop(pc.green("No changed files detected. Workspace is clean!"));
+      spinner.stop(pc.green("No changed files detected. Workspace clean!"));
       p.outro(pc.gray("Server starting normally... 🚀"));
       process.exit(0);
     }
@@ -55,14 +59,13 @@ export const handleScan = async () => {
         const testSpinner = p.spinner();
         testSpinner.start(`Executing Playwright test for ${file.filePath}...`);
 
-        let result = await runPlaywrightTest(testFile);
+        const result = await runPlaywrightTest(testFile);
 
         if (result.passed) {
           testSpinner.stop(pc.green(`✔ Test passed for ${file.filePath}`));
         } else {
           testSpinner.stop(pc.red(`✖ Test failed for ${file.filePath}`));
 
-          // AI Fix Request
           const aiSpinner = p.spinner();
           aiSpinner.start("🤖 AI QA Agent analyzing failure trace & code...");
 
@@ -82,7 +85,6 @@ export const handleScan = async () => {
               "AI Proposed Solution"
             );
 
-            // Show Line-by-Line Code Diff
             showDiffPreview(file.filePath, file.content || "", aiFix.fixedCode);
 
             const shouldFix = await p.confirm({
@@ -93,23 +95,40 @@ export const handleScan = async () => {
             if (p.isCancel(shouldFix) || !shouldFix) {
               p.log.warn("Auto-fix skipped by user.");
             } else {
-              // Apply Fix with Backup
               const { backupCode, success } = applySafeFix(file.absolutePath, aiFix.fixedCode);
 
               if (success) {
                 p.log.success(pc.green(`✔ Fix applied. Re-running Playwright verification test...`));
 
-                // Verification Step
                 const verifySpinner = p.spinner();
                 verifySpinner.start("Verifying fix stability...");
                 const verifyResult = await runPlaywrightTest(testFile);
 
                 if (verifyResult.passed) {
                   verifySpinner.stop(pc.green(`🎉 Auto-Fix Verified & Passed!`));
+
+                  // Day 10 Feature: Branch Creation Prompt
+                  const createPR = await p.confirm({
+                    message: `Create a Git fix-branch for ${pc.cyan(file.filePath)}?`,
+                    initialValue: true,
+                  });
+
+                  if (createPR && !p.isCancel(createPR)) {
+                    const gitSpinner = p.spinner();
+                    gitSpinner.start("Creating Git branch & committing verified fix...");
+                    const { branchName, success: gitSuccess } = await createFixBranchAndCommit(file.filePath);
+                    
+                    if (gitSuccess) {
+                      gitSpinner.stop(pc.green(`✔ Fix committed on branch: ${pc.cyan(branchName)}`));
+                      p.log.info(`💡 Push branch to GitHub: ${pc.dim(`git push origin ${branchName}`)}`);
+                    } else {
+                      gitSpinner.stop(pc.red("Failed to create Git branch."));
+                    }
+                  }
                 } else {
                   verifySpinner.stop(pc.red(`⚠️ Re-test failed after applying fix. Rolling back changes...`));
                   rollbackFix(file.absolutePath, backupCode);
-                  p.log.error(pc.yellow(`🔄 Rollback completed! Restored ${file.filePath} to initial state.`));
+                  p.log.error(pc.yellow(`🔄 Rollback completed! Restored ${file.filePath}.`));
                 }
               }
             }

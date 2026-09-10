@@ -70,3 +70,24 @@ export const getChangedFiles = async (): Promise<ChangedFile[]> => {
 
   return changedFiles;
 };
+
+/**
+ * Creates a fix branch, commits changes for Day 10 GitHub integration
+ */
+export const createFixBranchAndCommit = async (
+  filePath: string
+): Promise<{ branchName: string; success: boolean }> => {
+  try {
+    const timeStamp = Date.now();
+    const cleanFileName = filePath.replace(/[^a-zA-Z0-9]/g, "-");
+    const branchName = `testpilot/fix-${cleanFileName}-${timeStamp}`;
+
+    await git.checkoutLocalBranch(branchName);
+    await git.add(filePath);
+    await git.commit(`fix(testpilot): auto-repair applied for ${filePath}`);
+
+    return { branchName, success: true };
+  } catch {
+    return { branchName: "", success: false };
+  }
+};
