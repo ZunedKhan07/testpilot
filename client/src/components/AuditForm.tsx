@@ -36,6 +36,7 @@ export const AuditForm: React.FC<AuditFormProps> = ({
             placeholder="https://github.com/username/repository"
             value={repoUrl}
             onChange={(e) => setRepoUrl(e.target.value)}
+            autoComplete="off"
             required
             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
           />
@@ -50,6 +51,7 @@ export const AuditForm: React.FC<AuditFormProps> = ({
             placeholder="AIzaSy..."
             value={geminiApiKey}
             onChange={(e) => setGeminiApiKey(e.target.value)}
+            autoComplete="off"
             required
             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
           />

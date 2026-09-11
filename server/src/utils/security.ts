@@ -1,13 +1,17 @@
 import crypto from "crypto";
 
 /**
- * 1. Flexible Gemini API Key Validation
- * Validates Google Gemini API keys (starts with 'AIzaSy' and length >= 35).
+ * 1. Updated Gemini API Key Validation
+ * Validates Google Gemini API keys (supports both legacy 'AIzaSy' and new 'AQ.' formats).
  */
 export const isValidGeminiKey = (key: string): boolean => {
-  if (typeof key !== "string") return false;
+  if (!key || typeof key !== "string") return false;
   const trimmedKey = key.trim();
-  return trimmedKey.startsWith("AIzaSy") && trimmedKey.length >= 35;
+  
+  return (
+    (trimmedKey.startsWith("AIzaSy") || trimmedKey.startsWith("AQ.")) &&
+    trimmedKey.length >= 35
+  );
 };
 
 /**

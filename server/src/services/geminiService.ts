@@ -50,7 +50,7 @@ ${contextText}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview", // Updated to current stable model
       contents: prompt,
       config: {
         responseMimeType: "application/json",

@@ -7,6 +7,9 @@ export const createProjectAnalysis = async (req: Request, res: Response) => {
   try {
     const { geminiApiKey, repoUrl } = req.body;
 
+    console.log("Received Key:", geminiApiKey);
+    console.log("Is Key Valid?:", isValidGeminiKey(geminiApiKey));
+
     // 1. Validate API Key
     if (!isValidGeminiKey(geminiApiKey)) {
       return res.status(400).json({ success: false, error: "Invalid Gemini API Key format" });
