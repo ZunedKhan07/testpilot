@@ -89,9 +89,11 @@ export const handleScan = async () => {
 
           aiSpinner.stop(pc.cyan("🤖 AI QA Agent Analysis Complete!"));
 
-          if (aiFix) {
+          if (aiFix && aiFix.fixedCode) {
+            const fixTypeDisplay = (aiFix.fixType || "CODE_BUG").toString().toUpperCase();
+
             p.note(
-              `${pc.bold("Diagnosis:")} ${aiFix.explanation}\n${pc.bold("Fix Type:")} ${aiFix.type.toUpperCase()}`,
+              `${pc.bold("Diagnosis:")} ${aiFix.explanation}\n${pc.bold("Fix Type:")} ${fixTypeDisplay}`,
               "AI Proposed Solution"
             );
 

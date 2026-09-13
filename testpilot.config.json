@@ -1,4 +1,6 @@
 {
-  "serverUrl": "http://localhost:3000",
-  "geminiApiKey": "YOUR_GEMINI_API_KEY"
+  "serverUrl": "http://localhost:5000",
+  "geminiApiKey": "",
+  "autoFixOnStart": true,
+  "createdAt": "2026-09-13T15:35:18.280Z"
 }

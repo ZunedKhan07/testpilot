@@ -3,7 +3,7 @@ import { createTwoFilesPatch } from "diff";
 import pc from "picocolors";
 
 export interface AIFixResponse {
-  type: "code_bug" | "outdated_test";
+  fixType: "CODE_BUG" | "TEST_LOCATOR_BUG";
   explanation: string;
   targetFilePath: string;
   fixedCode: string;
@@ -17,10 +17,10 @@ export const requestAIFix = async (
   apiKey: string,
   changedFilePath: string,
   fileContent: string,
-  errorLog: string
+  failureLog: string
 ): Promise<AIFixResponse | null> => {
   try {
-    const response = await fetch(`${serverUrl}/api/analyze-failure`, {
+    const response = await fetch(`${serverUrl}/api/ai/fix`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -28,8 +28,8 @@ export const requestAIFix = async (
       },
       body: JSON.stringify({
         filePath: changedFilePath,
-        code: fileContent,
-        errorLog,
+        fileContent,
+        failureLog,
       }),
     });
 
@@ -37,15 +37,18 @@ export const requestAIFix = async (
       throw new Error(`Server returned status: ${response.status}`);
     }
 
-    return (await response.json()) as AIFixResponse;
-  } catch {
-    // Local Dev Fallback Mock
+    const data = await response.json();
+
+    // Safely map keys in case backend returns legacy fields
     return {
-      type: "code_bug",
-      explanation: "Detected locator or logic mismatch. Generating auto-fix patch.",
-      targetFilePath: changedFilePath,
-      fixedCode: fileContent.replace(/error/g, "fixed"),
+      fixType: data.fixType || data.type || "CODE_BUG",
+      explanation: data.explanation || "AI fixed locator or code mismatch.",
+      targetFilePath: data.targetFilePath || changedFilePath,
+      fixedCode: data.fixedCode || "",
     };
+  } catch (error: any) {
+    console.error(`AI fix request failed: ${error.message}`);
+    return null;
   }
 };
 

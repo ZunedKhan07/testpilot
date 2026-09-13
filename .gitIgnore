@@ -1,0 +1,5 @@
+# Server compiled build files
+server/src/**/*.js
+server/src/**/*.d.ts
+server/src/**/*.js.map
+server/src/**/*.d.ts.map
