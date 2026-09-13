@@ -13,23 +13,42 @@ export const DocsView: React.FC = () => {
     {
       id: "install",
       step: "01",
-      title: "CLI Tool Installation",
-      description: "Install the TestPilot CLI globally to enable terminal-level access across your system.",
-      code: "npm install -g testpilot-cli",
+      title: "Global Installation",
+      description: "Install TestPilot CLI globally on your system to run commands from any project workspace.",
+      code: "npm install -g testpilot",
     },
     {
-      id: "env-config",
+      id: "init",
       step: "02",
-      title: "Configure Gemini API Key",
-      description: "Export your Gemini API key as an environment variable or set it directly via the CLI prompt.",
-      code: 'export GEMINI_API_KEY="your_gemini_api_key_here"\ntestpilot config set-key',
+      title: "Initialize TestPilot CLI",
+      description: "Run the interactive setup in your project root to configure the backend server URL and Gemini API key.",
+      code: "npx testpilot init",
     },
     {
-      id: "run-inspect",
+      id: "scan",
       step: "03",
-      title: "Execute Code Audit & Auto-Heal",
-      description: "Trigger an automated security inspection and code self-healing pass on your target repository.",
-      code: "testpilot inspect --path=./src --auto-fix",
+      title: "Run QA Scan & Auto-Fix Engine",
+      description: "Scan modified Git workspace files, trigger automated Playwright tests, and apply Gemini AI auto-fixes with safe rollback.",
+      code: "npx testpilot scan",
+    },
+  ];
+
+  const geminiSteps = [
+    {
+      step: "1",
+      title: "Visit Google AI Studio",
+      desc: "Open Google AI Studio dashboard to manage your API credentials.",
+      link: "https://aistudio.google.com/app/apikey",
+    },
+    {
+      step: "2",
+      title: "Create API Key",
+      desc: "Click on 'Create API key' button and select your preferred Google Cloud project.",
+    },
+    {
+      step: "3",
+      title: "Copy & Use Key",
+      desc: "Copy the generated API key and paste it during 'npx testpilot init' prompt setup.",
     },
   ];
 
@@ -44,6 +63,7 @@ export const DocsView: React.FC = () => {
         </p>
       </div>
 
+      {/* CLI Workflow Steps */}
       <div className="space-y-6">
         {docSections.map((sec) => (
           <div 
@@ -70,6 +90,46 @@ export const DocsView: React.FC = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* How to Get Gemini API Key Section */}
+      <div className="bg-slate-900/40 border border-cyan-900/40 rounded-2xl p-6 space-y-6">
+        <div>
+          <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+            <span>🔑 How to Get Your Gemini API Key</span>
+          </h3>
+          <p className="text-slate-400 text-sm mt-1">
+            Follow these steps to generate a free Gemini API key for running TestPilot audits.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {geminiSteps.map((item) => (
+            <div 
+              key={item.step}
+              className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex flex-col justify-between"
+            >
+              <div>
+                <span className="inline-block px-2 py-0.5 bg-cyan-950 text-cyan-400 border border-cyan-800/50 text-xs font-mono font-bold rounded mb-2">
+                  Step 0{item.step}
+                </span>
+                <h4 className="text-sm font-bold text-slate-200 mb-1">{item.title}</h4>
+                <p className="text-slate-400 text-xs leading-relaxed mb-3">{item.desc}</p>
+              </div>
+
+              {item.link && (
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-xs text-cyan-400 hover:text-cyan-300 font-medium underline underline-offset-4"
+                >
+                  Open Google AI Studio ↗
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
