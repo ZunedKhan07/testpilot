@@ -3,3 +3,44 @@ server/src/**/*.js
 server/src/**/*.d.ts
 server/src/**/*.js.map
 server/src/**/*.d.ts.map
+
+
+
+
+
+
+
+
+
+
+
+TestPilot AI
+      │
+      ├───────────────┐
+      │               │
+Web Dashboard        CLI
+      │               │
+      └───────┬───────┘
+              │
+         Backend API
+              │
+      ┌───────┴────────┐
+      │                │
+Repository Scanner   Git / GitHub
+      │                │
+      └───────┬────────┘
+              │
+       Context Builder
+              │
+        User's AI API
+              │
+    Analysis / Suggestion
+              │
+       User Approval
+              │
+       Apply Changes
+              │
+    Tests & Verification
+              │
+          Git / PR
+
