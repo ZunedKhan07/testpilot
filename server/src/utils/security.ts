@@ -46,8 +46,9 @@ export const decryptKey = (text: string): string => {
   if (!text || !text.includes(":")) throw new Error("Invalid encrypted text format.");
 
   const [ivHex, encryptedHex] = text.split(":");
-  const iv = Buffer.from(ivHex, "hex");
-  const encryptedText = Buffer.from(encryptedHex, "hex");
+  // Yahan sirf 'as string' add kiya hai taaki TypeScript ka type error hat jaye
+  const iv = Buffer.from(ivHex as string, "hex");
+  const encryptedText = Buffer.from(encryptedHex as string, "hex");
   
   const decipher = crypto.createDecipheriv(
     "aes-256-cbc",
